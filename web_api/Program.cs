@@ -13,7 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<RestaurantContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Restaurant")));
+    options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=Brain.Data;Trusted_Connection=True;MultipleActiveResultSets=true"));
+
 
 var app = builder.Build();
 
@@ -28,10 +29,13 @@ app.UseHttpsRedirection();
 async Task<List<Meal>> GetMeals(RestaurantContext context) => await context.Meals.ToListAsync();
 app.MapGet("/meals/{Id}", async (RestaurantContext context, int Id) =>
 {
-    var category = await context.Meals.FirstOrDefaultAsync(c => c.Id == Id);
-    if (category != null)
+    var currentMeal = await context.Meals
+    .Include(meal => meal.Category)
+    .FirstOrDefaultAsync(meal => meal.Id == Id);
+
+    if (currentMeal != null)
     {
-        return Results.Ok(category);
+        return Results.Ok(currentMeal);
     }
     else
     {
